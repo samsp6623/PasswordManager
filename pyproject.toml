@@ -1,0 +1,10 @@
+[tool.ruff]
+# Set the maximum line length to 79.
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F"]
+
+[tool.ruff.format]
+docstring-code-format = true
+line-ending = "lf"
