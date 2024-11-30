@@ -3,3 +3,7 @@ __pycache__
 .ruff_cache
 venv
 .$UML for PM.drawio.bkp
+*.log
+temp.txt
+tests.py
+.DS_Store

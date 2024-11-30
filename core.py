@@ -1,6 +1,7 @@
 import base64
 import getpass
 import hashlib
+import logging
 import os
 import pdb
 import pickle
@@ -17,6 +18,14 @@ home_dir = os.environ.get("MY_PASSWORDMANAGER_FILEPATH", None)
 HOME_DIR = (
     Path(home_dir) if home_dir else Path("/Users/hakunamatata/Public/.PasswordManager")
 )
+
+FORMAT = "%(asctime)s %(levelname)s %(module)s %(funcName)s %(lineno)d %(message)s"
+logging.basicConfig(
+    filename="/Users/hakunamatata/Documents/Projects/PasswordManager/passwordmanager.log",
+    format=FORMAT,
+)
+logger = logging.getLogger("__name__")
+logger.setLevel(logging.INFO)
 
 
 class AbstractEncryptionClass(ABC):
@@ -43,11 +52,13 @@ class AbstractEncryptionClass(ABC):
     def encrypt(self, username, password):
         username = self.f.encrypt(username.encode()).decode()
         password = self.f.encrypt(password.encode()).decode()
+        logger.info("Ecrypted username and password")
         return Entries(username, password)
 
     def decrypt(self, inst):
         username = self.f.decrypt(inst.username.encode())
         password = self.f.decrypt(inst.password.encode())
+        logger.info("Decrypted username and password")
         return {
             "username": username.decode(),
             "password": password.decode(),
@@ -59,32 +70,51 @@ class AbstractEncryptionClass(ABC):
 
 class FernetwKey(AbstractEncryptionClass):
     def initialize():
-        return {"key": Fernet.generate_key()}
+        key_dict = {"key": Fernet.generate_key()}
+        logger.info("Generated key for FernetwKey.")
+        logger.debug("Generated key for FernetwKey. %s", str(key_dict["key"]))
+        return key_dict
 
     def pre_process(self, conf):
         self.f = Fernet(conf.encrypt_conf["key"])
 
 
 class FernetwPassphrase(AbstractEncryptionClass):
+    alg_opts = [
+        hashes.SHA1,
+        hashes.SHA256,
+        hashes.SHA512,
+        hashes.SHA512_256,
+        hashes.MD5,
+    ]
+
     def initialize():
-        alg_opts = [
-            hashes.SHA1,
-            hashes.SHA256,
-            hashes.SHA512,
-            hashes.SHA512_256,
-            hashes.MD5,
-        ]
-        algorithm = select_option(alg_opts, "Select the Algorithm for Encryption")
+        algorithm = select_option(
+            FernetwPassphrase.alg_opts, "Select the Algorithm for Encryption"
+        )
         passphrase = getpass.getpass("Provide the passphrase:")
         iterations = input("Enter the number of iterations [Ideal 480000]:")
+        iterations = (
+            iterations if iterations.isdigit() and iterations > 480000 else 480000
+        )
         salt = os.urandom(16)
-        return {
+        conf_data = {
             "algorithm": algorithm(),
             "passphrase": passphrase,
             "length": 32,
-            "iterations": int(iterations),
+            "iterations": iterations,
             "salt": salt,
         }
+        logger.info("Conf data prepared")
+        logger.debug(
+            "Configure data is algorithm is: %s %s %s %s %s",
+            conf_data["algorithm"],
+            conf_data["passphrase"],
+            conf_data["length"],
+            conf_data["iterations"],
+            conf_data["salt"],
+        )
+        return conf_data
 
     def pre_process(self, conf):
         try:
@@ -94,50 +124,75 @@ class FernetwPassphrase(AbstractEncryptionClass):
             iterations = conf.encrypt_conf["iterations"]
             salt = conf.encrypt_conf["salt"]
         except KeyError:
+            logger.error("Encryption config data missing.")
             raise Exception(
                 "Some propeties are not well defined. File might be corrupt."
             )
         kdf = PBKDF2HMAC(algorithm, length, salt, iterations)
         key = base64.urlsafe_b64encode(kdf.derive(passphrase.encode()))
         self.f = Fernet(key)
+        logger.debug(
+            "Pre-process conf is: %s %s %s %s %s",
+            getattr(conf.encrypt_conf["algorithm"], __name__, None)
+            or getattr(conf.encrypt_conf["algorithm"], "name", None),
+            conf.encrypt_conf["passphrase"],
+            conf.encrypt_conf["length"],
+            conf.encrypt_conf["iterations"],
+            conf.encrypt_conf["salt"],
+        )
 
 
 class Storage(ABC):
     """
-    This class is all about the accessing of storage volume.
+    This class is all about the accessing of storage volume with encryption.
     """
-
-    @abstractmethod
-    def get(): ...
-
-    @abstractmethod
-    def post(): ...
-
-    @abstractmethod
-    def delete(): ...
 
     def encryption_setup(self, message):
         passphrase = getpass.getpass(f"Enter the passphrase for File {message}")
         salt = hashlib.sha256(os.environ.get("SALT").encode("utf-8")).digest()
         kdf = PBKDF2HMAC(hashes.SHA512(), 32, salt, 500000)
         key = base64.urlsafe_b64encode(kdf.derive(passphrase.encode()))
-        return Fernet(key)
+        key = Fernet(key)
+        logger.info("Prepared Fernet key for storage")
+        logger.debug(
+            "Storage configuration data is, %s %s %s %s",
+            passphrase,
+            salt,
+            key._signing_key,
+            key._encryption_key,
+        )
+        return key
 
     def file_encryption(self, data):
         f = self.encryption_setup("Encryption")
         try:
             output = f.encrypt(data)
+            logger.info("File data encrypted")
             return output
         except InvalidToken:
+            logger.error("InvalidToken raised during encryption")
             print("[ERROR] Provided passphrase is incorrect.")
+        except Exception:
+            logger.error("Provided passphrase is incorrect")
+            print("[ERROR] Something went wrong. Contact Developer")
 
     def file_decryption(self, data):
         f = self.encryption_setup("Decryption")
         try:
             output = f.decrypt(data)
+            logger.info("File data decrypted")
+            logger.debug(
+                "File decryption key is: %s %s",
+                str(f._signing_key),
+                str(f._encryption_key),
+            )
             return output
-        except InvalidToken:
-            print("[ERROR] Provided passphrase is incorrect.")
+        except InvalidToken as e:
+            logger.error("InvalidToken raised during decryption")
+            print("[ERROR] Provided passphrase is incorrect.", e)
+        except Exception:
+            logger.error("Decryption passphrase is incorrect")
+            print("[ERROR] Something went wrong. Contact Developer")
 
     def __str__(self):
         return self.__class__.__name__
@@ -153,6 +208,8 @@ class File(Storage):
     def get(self, file):
         "Takes encrypted file object and returns the python config object."
         config = pickle.loads(self.file_decryption(file.read_bytes()))
+        logger.info("File Storage data retrieved.")
+        logger.debug("File conf is: %s", config.__dict__)
         return config
 
     def post(self, conf):
@@ -161,11 +218,14 @@ class File(Storage):
             Path(HOME_DIR.joinpath(conf.name)).touch()
         with open(HOME_DIR.joinpath(conf.name), mode="wb") as file:
             file.write(self.file_encryption(pickle.dumps(conf)))
+        logger.info("File Storage data written.")
+        logger.debug("File conf is: %s", conf.__dict__)
 
     def delete(self, conf):
         "Deletes the config file"
         os.remove(HOME_DIR + "/" + conf.name)
         print("File has been deleted.")
+        logger.info("File Storage deleted from disk.")
 
 
 class Entries:
@@ -199,8 +259,11 @@ class Config:
         """
         This method is used to perform First-time setup of the config.
         """
+        # just for internal reference
         self.name = input("Enter name of this Config:")
+        # for on disk name of file
         self.filename = input("Provide filename for this Config:")
+        # to store on specific location on disk
         user_defined_path = input(
             f"Provide path to this file [Default: {HOME_DIR}]:[to store all the app related files.]"
         )
@@ -222,6 +285,7 @@ class Config:
         self.data = dict()
 
         File().post(self)
+        logger.info("Config has been prepared")
         return self
 
     def pre_process(self):
@@ -233,35 +297,51 @@ class Config:
         """
         self.storage_type.post(self)
 
-    def add_credentials(self):
+    def add_credentials(self, domain=None, username=None, password=None, test=False):
         "Method to add the credential in the Config."
-        domain = input("Enter the domain address:")
-        username = input("Enter the login Username or Email:")
-        password = getpass.getpass("Enter the Password")
+        if test:
+            domain = domain
+            username = username
+            password = password
+        else:
+            domain = input("Enter the domain address:")
+            username = input("Enter the login Username or Email:")
+            password = getpass.getpass("Enter the Password")
         if self.data.get(domain, None):
             dmain = self.data[domain]
         else:
             self.data[domain] = set()
             dmain = self.data[domain]
         dmain.add(self.encryption_type.encrypt(username, password))
+        logger.info("domain, username and password added.")
 
     def get_credentials(self, domain):
         "To extract the credential information."
+        keys = []
+        for key in self.data.keys():
+            if key is None:
+                continue
+            if key.find(domain) != -1:
+                keys.append(key)
         output = []
-        for instance in self.data[domain]:
-            output.append(self.encryption_type.decrypt(instance))
+        for d in keys:
+            for instance in self.data[d]:
+                output.append(self.encryption_type.decrypt(instance))
+            logger.info("Retrieving domain, username and password")
         return output
 
     def delete_credentials(self, domain):
         "Deletes all username/password for the provided Domain"
         for inst in self.data[domain]:
             del inst
+        logger.info("Deleted all username and password for domain")
 
     def delete_instance(self, domain, username):
         "Deletes only domain and username matching username/password data."
         for inst in self.data[domain]:
             if inst.username == username:
                 del inst
+        logger.info("Deleted username and password entry for domain and username")
 
 
 class App:
@@ -288,8 +368,14 @@ class App:
         try:
             self.config = File().get(conf)
             self.config.pre_process()
+            logger.info("Loaded the config data")
             return self.config
         except IndexError:
             print("[ERROR] Provided value is out of range.")
+            logger.info("Value out of range")
         except ValueError:
             print("[ERROR] Provided value is not integer number. Try again.")
+            logger.info("Value out of range")
+        except Exception:
+            print("[ERROR] Technical Error.")
+            logger.info("Technical Error.")
