@@ -13,7 +13,12 @@ export MY_PASSWORDMANAGER_FILEPATH=""      # provide default dir to save the enc
 export SALT=""
 ```
 
+## How-to use
 
+```sh
+python3 cli.py                      # to start interactive terminal
+(password-manager) ?                # type `?` to know all the options
+```
 
 
 

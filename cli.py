@@ -1,6 +1,6 @@
 import cmd
-import pdb
 
+# import pdb
 from core import App, Config
 from utils import generate_random_password
 
@@ -46,7 +46,7 @@ class TurtleShell(cmd.Cmd):
             print("Provide name of domain")
 
     def do_delete_instance(self, arg):
-        "Deletes one username/password where username and domain matches."
+        "Deletes one entry on the username/password where match is found."
         try:
             data = arg.split(" ")
             domain = data[0]
@@ -65,9 +65,9 @@ class TurtleShell(cmd.Cmd):
         length = size if size > 7 else 12
         print(generate_random_password(length=length))
 
-    def do_introspect(self, arg):
-        "For developer only, Allows to introspect in the objects in the runtime"
-        pdb.set_trace()
+    # def do_introspect(self, arg):
+    #     "For developer only, Allows to introspect in the objects in the runtime"
+    #     pdb.set_trace()
 
     def do_save(self, arg):
         self.config.closing_time()
