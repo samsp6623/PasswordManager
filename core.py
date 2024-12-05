@@ -323,10 +323,10 @@ class Config:
                 continue
             if key.find(domain) != -1:
                 keys.append(key)
-        output = []
+        output = {}
         for d in keys:
             for instance in self.data[d]:
-                output.append(self.encryption_type.decrypt(instance))
+                output.update({d: self.encryption_type.decrypt(instance)})
             logger.info("Retrieving domain, username and password")
         return output
 
