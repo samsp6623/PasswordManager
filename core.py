@@ -82,9 +82,17 @@ class FernetwKey(AbstractEncryptionClass):
 class FernetwPassphrase(AbstractEncryptionClass):
     alg_opts = [
         hashes.SHA1,
+        hashes.SHA224,
         hashes.SHA256,
+        hashes.SHA384,
+        hashes.SHA3_224,
+        hashes.SHA3_256,
+        hashes.SHA3_384,
+        hashes.SHA3_512,
         hashes.SHA512,
+        hashes.SHA512_224,
         hashes.SHA512_256,
+        hashes.SM3,
         hashes.MD5,
     ]
 
