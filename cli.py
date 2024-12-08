@@ -19,6 +19,19 @@ class TurtleShell(cmd.Cmd):
         "This one helps to load existing Config file"
         self.config = App().load_config()
 
+    def do_change_setup(self, arg):
+        """
+        This option helps to reconfigure(migrate) existing data to with newer
+        configuration.
+        """
+        if self.config is None:
+            print("Please load your configuration first.")
+        else:
+            conf = Config().initialize()
+            conf.data = self.config.data
+            conf.storage_type.post(conf)
+            print("Successfully changed the algorithm setup for data encryption.")
+
     def do_add_cred(self, arg):
         "Prompts to add the username and password for the domain."
         try:
