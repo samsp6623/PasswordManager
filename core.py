@@ -14,14 +14,11 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from utils import select_option
 
-home_dir = os.environ.get("MY_PASSWORDMANAGER_FILEPATH", None)
-HOME_DIR = (
-    Path(home_dir) if home_dir else Path("/Users/hakunamatata/Public/.PasswordManager")
-)
-
+BASE_DIR = Path(__file__).parent
+HOME_DIR = BASE_DIR.joinpath(".PasswordManager")
 FORMAT = "%(asctime)s %(levelname)s %(module)s %(funcName)s %(lineno)d %(message)s"
 logging.basicConfig(
-    filename="/Users/hakunamatata/Documents/Projects/PasswordManager/passwordmanager.log",
+    filename=str(BASE_DIR.joinpath("passwordmanager.log")),
     format=FORMAT,
 )
 logger = logging.getLogger("__name__")
