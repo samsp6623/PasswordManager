@@ -1,4 +1,5 @@
 import cmd
+import os
 import pdb
 
 from core import App, Config
@@ -24,23 +25,25 @@ class TurtleShell(cmd.Cmd):
         This option helps to reconfigure(migrate) existing data to with newer
         configuration.
         """
-        if self.config is None:
+        if not self.config:
             print("Please load your configuration first.")
-        else:
-            conf = Config().initialize()
-            conf.data = self.config.data
-            conf.storage_type.post(conf)
-            print("Successfully changed the algorithm setup for data encryption.")
+        conf = Config().initialize()
+        conf.pre_process()
+        setattr(conf, "is_test", True)
+        for d, ups in self.config.data.items():
+            for up in ups:
+                data = self.config.encryption_type.decrypt(up)
+                conf.add_credentials(domain=d, **data)
+        setattr(conf, "is_test", False)
+        conf.storage_type.post(conf)
+        print("Successfully changed the algorithm setup for data encryption.")
 
     def do_add_cred(self, arg):
         "Prompts to add the username and password for the domain."
         try:
             self.config.add_credentials()
-        except AttributeError:
-            print(
-                "Make sure the config has been loaded first, Since TurtleShell have no",
-                "`config` attribute.",
-            )
+        except Exception as e:
+            print("Error!", e)
 
     def do_get_creds(self, arg):
         "Lists decrypted username/password pairs for provided domain."
@@ -88,8 +91,6 @@ class TurtleShell(cmd.Cmd):
 
     def do_finish(self, arg):
         "Stop recording, close the turtle window, and exit:  BYE"
-        print("Please wait a moment! We are saving your changes, if any.")
-        self.config.closing_time()
         print("All done. Thanks for using password Manager.")
         return True
 

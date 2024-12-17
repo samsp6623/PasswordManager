@@ -289,7 +289,8 @@ class Config:
         self.storage_type = storage_opt()
         self.data = dict()
 
-        File().post(self)
+        self.storage_type.post(self)
+        self.is_test = False
         logger.info("Config has been prepared")
         return self
 
@@ -302,9 +303,9 @@ class Config:
         """
         self.storage_type.post(self)
 
-    def add_credentials(self, domain=None, username=None, password=None, test=False):
+    def add_credentials(self, domain=None, username=None, password=None):
         "Method to add the credential in the Config."
-        if test:
+        if self.is_test:
             domain = domain
             username = username
             password = password
@@ -312,11 +313,9 @@ class Config:
             domain = input("Enter the domain address:")
             username = input("Enter the login Username or Email:")
             password = getpass.getpass("Enter the Password")
-        if self.data.get(domain, None):
-            dmain = self.data[domain]
-        else:
+        if not self.data.get(domain, None):
             self.data[domain] = set()
-            dmain = self.data[domain]
+        dmain = self.data[domain]
         dmain.add(self.encryption_type.encrypt(username, password))
         logger.info("domain, username and password added.")
 
