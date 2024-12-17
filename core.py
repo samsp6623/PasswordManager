@@ -321,16 +321,18 @@ class Config:
 
     def get_credentials(self, domain):
         "To extract the credential information."
-        keys = []
+        keys = set()
         for key in self.data.keys():
             if key is None:
                 continue
-            if key.find(domain) != -1:
-                keys.append(key)
+            if key.find(domain) > 0:
+                keys.add(key)
         output = {}
         for d in keys:
             for instance in self.data[d]:
-                output.update({d: self.encryption_type.decrypt(instance)})
+                if not output.get(d, None):
+                    output[d] = []
+                output[d].append(self.encryption_type.decrypt(instance))
             logger.info("Retrieving domain, username and password")
         return output
 
