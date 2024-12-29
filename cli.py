@@ -1,8 +1,7 @@
 import cmd
-import os
 import pdb
 
-from core import App, Config
+from core import App, AutomationInterface, Config, Interface, TerminalInterface
 from utils import generate_random_password
 
 
@@ -12,64 +11,59 @@ class TurtleShell(cmd.Cmd):
     prompt = "(password-manager) "
     file = None
 
+    def do_load_config(self, arg):
+        "This one helps to load existing Config file"
+        try:
+            app = App()
+            Interface.update(TerminalInterface)
+            self.context = app.load_config()
+        except Exception as e:
+            print("Cant load file, try again:", e)
+
     def do_make_config(self, arg):
         "This one helps to initialize new Config file."
         Config().initialize()
-
-    def do_load_config(self, arg):
-        "This one helps to load existing Config file"
-        self.config = App().load_config()
 
     def do_change_setup(self, arg):
         """
         This option helps to reconfigure(migrate) existing data to with newer
         configuration.
         """
-        if not self.config:
+        if not self.context:
             print("Please load your configuration first.")
         conf = Config().initialize()
+        Interface.update(AutomationInterface)
         conf.pre_process()
-        setattr(conf, "is_test", True)
-        for d, ups in self.config.data.items():
+        for d, ups in self.context.data.items():
             for up in ups:
-                data = self.config.encryption_type.decrypt(up)
-                conf.add_credentials(domain=d, **data)
-        setattr(conf, "is_test", False)
+                data = self.context.encryption_type.decrypt(up)
+                Interface().load(data)
+                conf.add_credentials()
+        Interface.update(TerminalInterface)
         conf.storage_type.post(conf)
         print("Successfully changed the algorithm setup for data encryption.")
 
     def do_add_cred(self, arg):
         "Prompts to add the username and password for the domain."
         try:
-            self.config.add_credentials()
+            self.context.add_credentials()
         except Exception as e:
             print("Error!", e)
 
     def do_get_creds(self, arg):
         "Lists decrypted username/password pairs for provided domain."
         try:
-            domain = arg.split(" ")[0]
-            print(self.config.get_credentials(domain))
+            print(self.context.get_credentials())
         except KeyError:
             print("Please provide the domain name.")
 
     def do_delete_creds(self, arg):
         "Removes all the username/password entry for provided domain."
-        try:
-            domain = arg.split(" ")
-            self.config.delete_credentials(domain)
-        except KeyError:
-            print("Provide name of domain")
+        self.context.delete_credentials()
 
     def do_delete_instance(self, arg):
         "Deletes one entry on the username/password where match is found."
-        try:
-            data = arg.split(" ")
-            domain = data[0]
-            username = data[1]
-            self.config.delete_instance(domain, username)
-        except KeyError:
-            print("Make sure to provide name of domain")
+        self.context.delete_instance()
 
     def do_suggest_password(self, arg):
         """Creates the password, can also be passed with arg to for more customization
@@ -86,7 +80,7 @@ class TurtleShell(cmd.Cmd):
         pdb.set_trace()
 
     def do_save(self, arg):
-        self.config.closing_time()
+        self.context.closing_time()
         print("[SUCCESS] all changes are saved.")
 
     def do_finish(self, arg):

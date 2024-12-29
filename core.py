@@ -1,28 +1,130 @@
 import base64
 import getpass
 import hashlib
+import inspect
 import logging
 import os
 import pdb
 import pickle
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from pathlib import Path
 
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-from utils import select_option
-
 BASE_DIR = Path(__file__).parent
 HOME_DIR = BASE_DIR.joinpath(".PasswordManager")
 FORMAT = "%(asctime)s %(levelname)s %(module)s %(funcName)s %(lineno)d %(message)s"
 logging.basicConfig(
-    filename=str(BASE_DIR.joinpath("passwordmanager.log")),
+    filename=str(HOME_DIR.joinpath(".passwordmanager.log")),
     format=FORMAT,
 )
 logger = logging.getLogger("__name__")
 logger.setLevel(logging.INFO)
+
+
+def indexed_print(index, itemname):
+    "Formats the single entry [row level] for text."
+    print("{0:^8}".format(index), itemname)
+
+
+def select_option(options, message, conf, field_name):
+    "For all the iterable items, this func provides pretty-printed output"
+    print("{0:^8} {1:<30s}".format("Index", "Item Name"))
+    print("{0:^8} {1:<30s}".format("-----", "---------"))
+    for index, item in enumerate(options):
+        indexed_print(index, item)
+    user_choice = int(
+        Interface().input(message=message, field_name=field_name, level=2)
+    )
+    return options[user_choice]
+
+
+def basic_select_option(options, message):
+    "For all the iterable items, this func provides pretty-printed output"
+    print("{0:^8} {1:<30s}".format("Index", "Item Name"))
+    print("{0:^8} {1:<30s}".format("-----", "---------"))
+    for index, item in enumerate(options):
+        indexed_print(index, item)
+    user_choice = int(input(message))
+    return options[user_choice]
+
+
+class AbstractInterface(ABC):
+    """
+    This class is Abstract to represent all the various interfaces that device
+    can interact with this program.
+    """
+
+    @abstractmethod
+    def input():
+        """
+        This method represents the input method for the interface to collect data.
+        """
+        pass
+
+
+class TerminalInterface(AbstractInterface):
+    @staticmethod
+    def input(message="", kind="text", **kwargs):
+        field = ""
+        if kind == "text":
+            field = input(message)
+        elif kind == "password":
+            field = getpass.getpass(message)
+        else:
+            print(f"kind {kind} for field: {field} is not supported. Check again.")
+            return
+        return field
+
+
+class ScriptInterface(AbstractInterface):
+    data = dict()
+
+    @classmethod
+    def input(cls, field_name="field_name", level=1, **kwargs):
+        frames = inspect.getouterframes(inspect.currentframe())
+        q_name = frames[level].frame.f_code.co_qualname
+        field = cls.data[q_name].get(field_name, None)
+        if field is None:
+            print(f"Needed field {field_name} is not available in {q_name}.")
+        return field
+
+    def load(cls, user_data):
+        cls.data.update(user_data)
+
+
+class AutomationInterface(AbstractInterface):
+    data = dict()
+
+    @classmethod
+    def input(cls, message="message", field_name="field_name", **kwargs):
+        data = cls.data[field_name]
+        cls.data = dict()
+        return data
+
+    def load(cls, user_data):
+        cls.data.update(user_data)
+
+
+class Interface:
+    """
+    This class is singleton of input interface for all user interaction with the
+    program.
+    """
+
+    instance = None
+
+    def __new__(cls):
+        if cls.instance:
+            return cls.instance
+
+    @classmethod
+    def update(cls, _type):
+        cls.instance = _type()
+        return cls.instance
 
 
 class AbstractEncryptionClass(ABC):
@@ -93,12 +195,20 @@ class FernetwPassphrase(AbstractEncryptionClass):
         hashes.MD5,
     ]
 
-    def initialize():
+    def initialize(config):
         algorithm = select_option(
-            FernetwPassphrase.alg_opts, "Select the Algorithm for Encryption"
+            FernetwPassphrase.alg_opts,
+            "Select the Algorithm for Encryption",
+            config,
+            "algorithm",
         )
-        passphrase = getpass.getpass("Provide the passphrase:")
-        iterations = input("Enter the number of iterations [Ideal 480000]:")
+        passphrase = Interface().input(
+            message="Provide the passphrase:", field_name="passphrase"
+        )
+        iterations = Interface().input(
+            message="Enter the number of iterations [Ideal 480000]:",
+            field_name="iterations",
+        )
         iterations = (
             iterations if iterations.isdigit() and iterations > 480000 else 480000
         )
@@ -149,11 +259,15 @@ class FernetwPassphrase(AbstractEncryptionClass):
 
 class Storage(ABC):
     """
-    This class is all about the accessing of storage volume with encryption.
+    This class is for mandatory encryption at Storage level for reading/writing action
+    through this program.
     """
 
-    def encryption_setup(self, message):
-        passphrase = getpass.getpass(f"Enter the passphrase for File {message}")
+    def encryption_setup(self, op):
+        passphrase = Interface().input(
+            message=f"Enter the passphrase for File {op}",
+            kind="password",
+        )
         salt = hashlib.sha256(os.environ.get("SALT").encode("utf-8")).digest()
         kdf = PBKDF2HMAC(hashes.SHA512(), 32, salt, 500000)
         key = base64.urlsafe_b64encode(kdf.derive(passphrase.encode()))
@@ -176,10 +290,8 @@ class Storage(ABC):
             return output
         except InvalidToken:
             logger.error("InvalidToken raised during encryption")
-            print("[ERROR] Provided passphrase is incorrect.")
         except Exception:
             logger.error("Provided passphrase is incorrect")
-            print("[ERROR] Something went wrong. Contact Developer")
 
     def file_decryption(self, data):
         f = self.encryption_setup("Decryption")
@@ -194,10 +306,8 @@ class Storage(ABC):
             return output
         except InvalidToken as e:
             logger.error("InvalidToken raised during decryption")
-            print("[ERROR] Provided passphrase is incorrect.", e)
         except Exception:
             logger.error("Decryption passphrase is incorrect")
-            print("[ERROR] Something went wrong. Contact Developer")
 
     def __str__(self):
         return self.__class__.__name__
@@ -265,32 +375,46 @@ class Config:
         This method is used to perform First-time setup of the config.
         """
         # just for internal reference
-        self.name = input("Enter name of this Config:")
+        self.name = Interface().input(
+            message="Enter name of this Config:", field_name="name"
+        )
         # for on disk name of file
-        self.filename = input("Provide filename for this Config:")
+        self.filename = Interface().input(
+            message="Provide filename for this Config:", field_name="filename"
+        )
         # to store on specific location on disk
-        user_defined_path = input(
-            f"Provide path to this file [Default: {HOME_DIR}]:[to store all the app related files.]"
+        user_defined_path = Interface().input(
+            message=f"Provide path to this file [Default: {HOME_DIR}]:[to store all the app related files.]",
+            field_name="user_defined_path",
         )
         path = Path(user_defined_path) if user_defined_path else HOME_DIR
         if not path.exists():
             path.mkdir(parents=True, exist_ok=True)
         self.path = path
+
         encrypt_opts = [FernetwKey, FernetwPassphrase]
         encrypt_opt = select_option(
-            encrypt_opts, "Select the Encrpytion option for the username and password:"
+            encrypt_opts,
+            "Select the Encrpytion option for the username and password:",
+            self,
+            "encrypt_opt",
         )
         self.encryption_type = encrypt_opt()
+
         self.encrypt_conf = encrypt_opt.initialize()
+
         storage_opts = [File]
         storage_opt = select_option(
-            storage_opts, "Select the Storage option for the Config:"
+            storage_opts,
+            "Select the Storage option for the Config:",
+            self,
+            "storage_opt",
         )
         self.storage_type = storage_opt()
+
         self.data = dict()
 
         self.storage_type.post(self)
-        self.is_test = False
         logger.info("Config has been prepared")
         return self
 
@@ -303,29 +427,31 @@ class Config:
         """
         self.storage_type.post(self)
 
-    def add_credentials(self, domain=None, username=None, password=None):
+    def add_credentials(self):
         "Method to add the credential in the Config."
-        if self.is_test:
-            domain = domain
-            username = username
-            password = password
-        else:
-            domain = input("Enter the domain address:")
-            username = input("Enter the login Username or Email:")
-            password = getpass.getpass("Enter the Password")
+        domain = Interface().input(
+            message="Enter the domain address:", field_name="domain"
+        )
+        username = Interface().input(
+            message="Enter the login Username or Email:", field_name="username"
+        )
+        password = Interface().input(
+            message="Enter the Password", kind="password", field_name="password"
+        )
         if not self.data.get(domain, None):
             self.data[domain] = set()
         dmain = self.data[domain]
         dmain.add(self.encryption_type.encrypt(username, password))
         logger.info("domain, username and password added.")
 
-    def get_credentials(self, domain):
+    def get_credentials(self):
         "To extract the credential information."
         keys = set()
+        domain = Interface().input(message="Enter Domain:", field_name="domain")
         for key in self.data.keys():
             if key is None:
                 continue
-            if key.find(domain) > 0:
+            if key.find(domain) >= 0:
                 keys.add(key)
         output = {}
         for d in keys:
@@ -336,18 +462,35 @@ class Config:
             logger.info("Retrieving domain, username and password")
         return output
 
-    def delete_credentials(self, domain):
+    def delete_credentials(self):
         "Deletes all username/password for the provided Domain"
+        domain = Interface().input(field_name="domain", message="Domain:")
+        if not self.data.get(domain, None):
+            print(f"No data found for {domain}!")
+            return
         for inst in self.data[domain]:
-            del inst
-        logger.info("Deleted all username and password for domain")
+            self.data.pop(domain)
+            print(f"Deleted data for {domain}")
+            logger.info("Deleted all username and password for domain")
 
-    def delete_instance(self, domain, username):
+    def delete_instance(self):
         "Deletes only domain and username matching username/password data."
-        for inst in self.data[domain]:
-            if inst.username == username:
-                del inst
-        logger.info("Deleted username and password entry for domain and username")
+        domain = Interface().input(field_name="domain", message="Domain:")
+        username = Interface().input(field_name="username", message="Username:")
+        temp = deepcopy(self.data.get("domain", None))
+        if not bool(temp):
+            print(f"No instance for {domain} with {username} found!")
+            return
+        for inst in temp:
+            if (
+                username
+                == self.encryption_type.f.decrypt(inst.username.encode()).decode()
+            ):
+                self.data[domain].remove(inst)
+                print(f"Deleted {username} for {domain}.")
+                logger.info(
+                    "Deleted username and password entry for domain and username"
+                )
 
 
 class App:
@@ -363,25 +506,19 @@ class App:
         pth = Path(HOME_DIR)
         prob_configs = []
         for file_ in pth.iterdir():
-            if file_.is_file():
+            if file_.is_file() and not file_.name.startswith("."):
                 prob_configs.append(file_)
         if len(prob_configs) == 0:
             print(
                 f" [ERROR] We did not find any userdata at {HOME_DIR}. Make sure file",
                 "and folders are at place.",
             )
-        conf = select_option(prob_configs, "Select the config file:")
+        conf = basic_select_option(prob_configs, "Select the config file:")
         try:
             self.config = File().get(conf)
             self.config.pre_process()
             logger.info("Loaded the config data")
             return self.config
-        except IndexError:
-            print("[ERROR] Provided value is out of range.")
-            logger.info("Value out of range")
-        except ValueError:
-            print("[ERROR] Provided value is not integer number. Try again.")
-            logger.info("Value out of range")
-        except Exception:
-            print("[ERROR] Technical Error.")
-            logger.info("Technical Error.")
+        except Exception as e:
+            print("[ERROR]", e)
+            logger.info(e)
