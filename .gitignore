@@ -6,3 +6,5 @@ venv
 *.log
 temp.txt
 .DS_Store
+*.swp
+*/*.dtmp

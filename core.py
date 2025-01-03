@@ -363,6 +363,9 @@ class Entries:
 
 
 class Config:
+    storage_opts = [File]
+    encrypt_opts = [FernetwKey, FernetwPassphrase]
+
     def initialize(self):
         """
         This method is used to perform First-time setup of the config.
@@ -385,9 +388,8 @@ class Config:
             path.mkdir(parents=True, exist_ok=True)
         self.path = path
 
-        encrypt_opts = [FernetwKey, FernetwPassphrase]
         encrypt_opt = select_option(
-            encrypt_opts,
+            Config.encrypt_opts,
             "Select the Encrpytion option for the username and password:",
             "encrypt_opt",
         )
@@ -395,9 +397,8 @@ class Config:
 
         self.encrypt_conf = encrypt_opt.initialize()
 
-        storage_opts = [File]
         storage_opt = select_option(
-            storage_opts,
+            Config.storage_opts,
             "Select the Storage option for the Config:",
             "storage_opt",
         )
@@ -491,10 +492,7 @@ class App:
     def __init__(self):
         self.config = None
 
-    def load_config(self):
-        """
-        This methods checks some preliminary condition and initializes the app class.
-        """
+    def _get_conf_files(self):
         if not Path(HOME_DIR).exists():
             Path(HOME_DIR).mkdir(parents=True)
         pth = Path(HOME_DIR)
@@ -507,6 +505,13 @@ class App:
                 f" [ERROR] We did not find any userdata at {HOME_DIR}. Make sure file",
                 "and folders are at place.",
             )
+        return prob_configs
+
+    def load_config(self):
+        """
+        This methods checks some preliminary condition and initializes the app class.
+        """
+        prob_configs = self._get_conf_files()
         conf = select_option(prob_configs, "Select the config file:", "probe_config")
         try:
             self.config = File().get(conf)

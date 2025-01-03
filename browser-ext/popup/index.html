@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="index.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chewy&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="main">
+      <h2>Password Manager Browser Extention</h2>
+      <button id="home" class="hide">Home</button>
+      <button class="button" id="App.load_config-button">Load Config</button>
+      <button class="button" id="Config.add_credentials-button">Add Credential</button>
+      <button class="button" id="Config.get_credential-button">Get Credential</button>
+      <button class="button" id="Config.delete_credentials-button">Delete Credential</button>
+      <button class="button" id="Config.delete_instance-button">Delete instance</button>
+      <button class="button" id="Config.initialize-button">Initialize Config</button>
+    </div>
+    <div class="block hide" id="App.load_config-block"></div>
+    <div class="block hide" id="Config.add_credentials-block"></div>
+    <div class="block hide" id="Config.get_credential-block"></div>
+    <div class="block hide" id="Config.delete_credentials-block"></div>
+    <div class="block hide" id="Config.delete_instance-block"></div>
+    <div class="block hide" id="Config.initialize-block"></div>
+    <div id="output"></div>
+</body>
+<script src="index.js"></script>
+
+</html>

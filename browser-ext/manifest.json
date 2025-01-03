@@ -1,0 +1,22 @@
+{
+  "manifest_version": 2,
+  "name": "Password Manager",
+  "version": "1.0",
+  "description": "This app allows to interact with local server to use credential from Password Manager App.",
+  "developer": {
+    "name": "pydevmans",
+    "url": "https://github.com/pydevmans/PasswordManager"
+  },
+  "icons": {
+    "48": "icons/clipboard-48.png",
+    "96": "icons/clipboard-96.png"
+  },
+  "permissions": [
+    "activeTab"
+  ],
+  "browser_action": {
+    "default_icon": "icons/clipboard-48.png",
+    "default_title": "Password Manager",
+    "default_popup": "popup/index.html"
+  }
+}

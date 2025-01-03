@@ -44,7 +44,7 @@ data_dict.update({"App.load_config": {"probe_config": 1}})
 if __name__ == "__main__":
     Interface.update(ScriptInterface)
     Interface().load(data_dict)
-    # conf = Config().initialize()
+    conf = Config().initialize()
     app = App()
     app.load_config()
     data_dict.pop("App.load_config")

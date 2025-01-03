@@ -1,0 +1,70 @@
+body, button {
+    font-family: "Chewy", serif;
+    font-weight: 400;
+    font-size: 18px;
+    font-style: normal;
+}
+body {
+    background: #F6FDA5;
+    color: #949E12;
+}
+#main{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+h2 {
+    color: #949E12;
+    margin-top: 25px;
+}
+form {
+    display: flex;
+    flex-direction: column;
+    margin-top: 25px; 
+}
+form > label, form > input{
+    margin: 5px;
+}
+button {
+    width: 75vw;
+    height: 10vh;
+    border-radius: 5px;
+    background-color: #C0CC27;
+    color: #949E12;
+    margin: 5px;
+}
+button:hover, a:hover {
+    background-color: #C0CC27;
+    color: #F6FDA5;
+    cursor: pointer;
+}
+
+input {
+    background-color: #F2FB7A;
+    color: #949E12;
+    border-block-color: black;
+    font-size: 18px;
+    border-radius: 5px;
+    height: 5vh;
+}
+
+.block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.hide {
+    display: none;
+}
+#clipboard-icon {
+    height: 25px;
+    top: 7px;
+    position: relative;
+    left: 5px;
+}
+#output {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-items: start;
+}
