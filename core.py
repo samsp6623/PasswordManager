@@ -434,6 +434,7 @@ class Config:
         dmain = self.data[domain]
         dmain.add(self.encryption_type.encrypt(username, password))
         logger.info("domain, username and password added.")
+        return {"username": username, "password": password, "domain": domain}
 
     def get_credentials(self):
         "To extract the credential information."
@@ -463,12 +464,13 @@ class Config:
             self.data.pop(domain)
             print(f"Deleted data for {domain}")
             logger.info("Deleted all username and password for domain")
+        return {"domain": domain}
 
     def delete_instance(self):
         "Deletes only domain and username matching username/password data."
         domain = Interface().input(field_name="domain", message="Domain:")
         username = Interface().input(field_name="username", message="Username:")
-        temp = deepcopy(self.data.get("domain", None))
+        temp = deepcopy(self.data.get(domain, None))
         if not bool(temp):
             print(f"No instance for {domain} with {username} found!")
             return
@@ -482,6 +484,7 @@ class Config:
                 logger.info(
                     "Deleted username and password entry for domain and username"
                 )
+        return {"domain": domain, "username": username}
 
 
 class App:
@@ -556,3 +559,4 @@ class InputHelper:
                         ] = ""
 
         pprint(data, indent=4)
+        return data
