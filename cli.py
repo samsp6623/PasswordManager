@@ -37,6 +37,7 @@ class TurtleShell(cmd.Cmd):
         for d, ups in self.context.data.items():
             for up in ups:
                 data = self.context.encryption_type.decrypt(up)
+                data.update({"domain": d})
                 Interface().load(data)
                 conf.add_credentials()
         Interface.update(TerminalInterface)

@@ -6,9 +6,11 @@ import logging
 import os
 import pdb
 import pickle
+import re
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from pathlib import Path
+from pprint import pprint
 
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
@@ -30,7 +32,7 @@ def indexed_print(index, itemname):
     print("{0:^8}".format(index), itemname)
 
 
-def select_option(options, message, conf, field_name):
+def select_option(options, message, field_name):
     "For all the iterable items, this func provides pretty-printed output"
     print("{0:^8} {1:<30s}".format("Index", "Item Name"))
     print("{0:^8} {1:<30s}".format("-----", "---------"))
@@ -39,16 +41,6 @@ def select_option(options, message, conf, field_name):
     user_choice = int(
         Interface().input(message=message, field_name=field_name, level=2)
     )
-    return options[user_choice]
-
-
-def basic_select_option(options, message):
-    "For all the iterable items, this func provides pretty-printed output"
-    print("{0:^8} {1:<30s}".format("Index", "Item Name"))
-    print("{0:^8} {1:<30s}".format("-----", "---------"))
-    for index, item in enumerate(options):
-        indexed_print(index, item)
-    user_choice = int(input(message))
     return options[user_choice]
 
 
@@ -102,7 +94,7 @@ class AutomationInterface(AbstractInterface):
     @classmethod
     def input(cls, message="message", field_name="field_name", **kwargs):
         data = cls.data[field_name]
-        cls.data = dict()
+        cls.data.pop(field_name)
         return data
 
     def load(cls, user_data):
@@ -195,23 +187,23 @@ class FernetwPassphrase(AbstractEncryptionClass):
         hashes.MD5,
     ]
 
-    def initialize(config):
+    @staticmethod
+    def initialize():
         algorithm = select_option(
             FernetwPassphrase.alg_opts,
             "Select the Algorithm for Encryption",
-            config,
             "algorithm",
         )
         passphrase = Interface().input(
             message="Provide the passphrase:", field_name="passphrase"
         )
-        iterations = Interface().input(
-            message="Enter the number of iterations [Ideal 480000]:",
-            field_name="iterations",
+        iterations = int(
+            Interface().input(
+                message="Enter the number of iterations [Ideal 480000]:",
+                field_name="iterations",
+            )
         )
-        iterations = (
-            iterations if iterations.isdigit() and iterations > 480000 else 480000
-        )
+        iterations = iterations if iterations > 480000 else 480000
         salt = os.urandom(16)
         conf_data = {
             "algorithm": algorithm(),
@@ -267,6 +259,7 @@ class Storage(ABC):
         passphrase = Interface().input(
             message=f"Enter the passphrase for File {op}",
             kind="password",
+            field_name="passphrase",
         )
         salt = hashlib.sha256(os.environ.get("SALT").encode("utf-8")).digest()
         kdf = PBKDF2HMAC(hashes.SHA512(), 32, salt, 500000)
@@ -396,7 +389,6 @@ class Config:
         encrypt_opt = select_option(
             encrypt_opts,
             "Select the Encrpytion option for the username and password:",
-            self,
             "encrypt_opt",
         )
         self.encryption_type = encrypt_opt()
@@ -407,7 +399,6 @@ class Config:
         storage_opt = select_option(
             storage_opts,
             "Select the Storage option for the Config:",
-            self,
             "storage_opt",
         )
         self.storage_type = storage_opt()
@@ -513,7 +504,7 @@ class App:
                 f" [ERROR] We did not find any userdata at {HOME_DIR}. Make sure file",
                 "and folders are at place.",
             )
-        conf = basic_select_option(prob_configs, "Select the config file:")
+        conf = select_option(prob_configs, "Select the config file:", "probe_config")
         try:
             self.config = File().get(conf)
             self.config.pre_process()
@@ -522,3 +513,46 @@ class App:
         except Exception as e:
             print("[ERROR]", e)
             logger.info(e)
+
+
+class InputHelper:
+    klass_list = [App, Config, FernetwPassphrase, Storage]
+
+    @classmethod
+    def get_input_params(cls):
+        """
+        This method helps to create JSON/Dict object to pass value for other Interface.
+        """
+        data = dict()
+        for _class in cls.klass_list:
+            for _klass_method in inspect.getmembers(
+                _class, predicate=inspect.isfunction
+            ):
+                _method = getattr(_class, _klass_method[0], None)
+                _code = inspect.getsource(_method)
+
+                _interface_args = re.findall(
+                    r'Interface\([\b]*\)\.input\([\b]*([\w=\[\]:,\{\}_.\n" ]*)\)', _code
+                )
+                qual_name = _method.__qualname__
+                if bool(_interface_args):
+                    data[qual_name] = dict()
+                    for _interface_arg in _interface_args:
+                        for _kw_pairs in _interface_arg.split(","):
+                            _kw = _kw_pairs.strip().split("=")
+                            if "field_name" in _kw:
+                                _field_name = _kw[1].replace('"', "")
+                                data[qual_name][_field_name] = ""
+
+                _temp = re.findall(
+                    r'select_option\([\b]*([\w=\[\]:,\{\}_.\n" ]*)\)', _code
+                )
+                if bool(_temp):
+                    if data.get(qual_name, None) is None:
+                        data[qual_name] = dict()
+                    for _select_option_args in _temp:
+                        data[qual_name][
+                            _select_option_args.split(",")[2].strip().replace('"', "")
+                        ] = ""
+
+        pprint(data, indent=4)
