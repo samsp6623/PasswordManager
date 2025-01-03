@@ -1,4 +1,6 @@
-from core import HOME_DIR, App, Interface, ScriptInterface
+import pdb
+
+from core import HOME_DIR, App, Config, Interface, ScriptInterface
 
 data_dict = dict()
 
@@ -37,6 +39,7 @@ data_dict.update(
     }
 )
 data_dict.update({"Storage.encryption_setup": {"passphrase": "userpassword"}})
+data_dict.update({"App.load_config": {"probe_config": 1}})
 
 if __name__ == "__main__":
     Interface.update(ScriptInterface)
@@ -46,5 +49,6 @@ if __name__ == "__main__":
     app.load_config()
     app.config.add_credentials()
     app.config.get_credentials()
+    app.config.closing_time()
     # app.config.delete_credentials()
     # app.config.delete_instance()

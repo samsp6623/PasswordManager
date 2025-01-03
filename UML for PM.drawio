@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/24.7.17 Chrome/128.0.6613.36 Electron/32.0.1 Safari/537.36" version="24.7.17">
   <diagram id="C5RBs43oDa-KdzZeNtuy" name="Page-1">
-    <mxGraphModel dx="2357" dy="1084" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1993" dy="826" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="WIyWlLk6GJQsqaUBKTNV-0" />
         <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0" />
@@ -89,18 +89,18 @@
           <mxGeometry y="78" width="160" height="92" as="geometry" />
         </mxCell>
         <mxCell id="KMxtjk_TlvN9ZybdX43b-39" value="FernetwKey" style="swimlane;fontStyle=2;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=0;strokeWidth=1;labelBackgroundColor=none;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-          <mxGeometry x="-360" y="365" width="160" height="150" as="geometry">
+          <mxGeometry x="-360" y="365" width="160" height="160" as="geometry">
             <mxRectangle x="-360" y="365" width="160" height="26" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
         <mxCell id="KMxtjk_TlvN9ZybdX43b-40" value="filename&#xa;path&#xa;name" style="text;align=center;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;" parent="KMxtjk_TlvN9ZybdX43b-39" vertex="1">
-          <mxGeometry y="26" width="160" height="44" as="geometry" />
+          <mxGeometry y="26" width="160" height="54" as="geometry" />
         </mxCell>
         <mxCell id="KMxtjk_TlvN9ZybdX43b-41" value="" style="line;html=1;strokeWidth=1;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;labelBackgroundColor=none;" parent="KMxtjk_TlvN9ZybdX43b-39" vertex="1">
-          <mxGeometry y="70" width="160" height="8" as="geometry" />
+          <mxGeometry y="80" width="160" height="8" as="geometry" />
         </mxCell>
         <mxCell id="KMxtjk_TlvN9ZybdX43b-42" value="initialize&#xa;preprocess&#xa;encrypt&#xa;decrypt" style="text;align=center;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;" parent="KMxtjk_TlvN9ZybdX43b-39" vertex="1">
-          <mxGeometry y="78" width="160" height="42" as="geometry" />
+          <mxGeometry y="88" width="160" height="72" as="geometry" />
         </mxCell>
         <mxCell id="KMxtjk_TlvN9ZybdX43b-44" value="FernetwPwd" style="swimlane;fontStyle=2;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=0;strokeWidth=1;labelBackgroundColor=none;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="-360" y="530" width="160" height="160" as="geometry">
@@ -131,7 +131,7 @@
           <mxGeometry y="70" width="160" height="8" as="geometry" />
         </mxCell>
         <mxCell id="KMxtjk_TlvN9ZybdX43b-54" value="initialize&#xa;preprocess&#xa;encrypt&#xa;decrypt" style="text;align=center;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;" parent="KMxtjk_TlvN9ZybdX43b-51" vertex="1">
-          <mxGeometry y="78" width="160" height="52" as="geometry" />
+          <mxGeometry y="78" width="160" height="72" as="geometry" />
         </mxCell>
         <mxCell id="9E2WWU8BKXoRJev0Updc-7" value="Storage &lt;&lt;Interface&gt;&gt;" style="swimlane;fontStyle=2;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=0;strokeWidth=1;labelBackgroundColor=none;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="-60" y="670" width="160" height="170" as="geometry">
@@ -284,8 +284,8 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="2pbk8YmK7bTG6tJPc2cB-0" value="load config&lt;div&gt;make config&lt;/div&gt;&lt;div&gt;change setup&lt;/div&gt;&lt;div&gt;add credential&lt;/div&gt;&lt;div&gt;get credential&lt;/div&gt;&lt;div&gt;delete credential&lt;/div&gt;&lt;div&gt;delete instance&lt;/div&gt;&lt;div&gt;suggest password&lt;/div&gt;&lt;div&gt;save&lt;/div&gt;&lt;div&gt;finish&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
-          <mxGeometry x="-690" y="290" width="120" height="200" as="geometry" />
+        <mxCell id="2pbk8YmK7bTG6tJPc2cB-0" value="load config GET POST&lt;div&gt;make config GET POST&lt;/div&gt;&lt;div&gt;change setup GET POST&lt;/div&gt;&lt;div&gt;add credential&amp;nbsp;&lt;/div&gt;&lt;div&gt;get credential&lt;/div&gt;&lt;div&gt;delete credential&lt;/div&gt;&lt;div&gt;delete instance&lt;/div&gt;&lt;div&gt;suggest password&lt;/div&gt;&lt;div&gt;save&lt;/div&gt;&lt;div&gt;finish&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="-690" y="290" width="220" height="200" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
