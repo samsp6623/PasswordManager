@@ -7,6 +7,6 @@ def generate_random_password(length=25):
     number to state the length of the password.
     """
     char_pool = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'\
-        ()*+,-./:;<=>?@[\\]^_`{|}~"
+        ()*+,-./:;<=>?@[]^_`{|}~"
     passphrase = "".join(random.choices(char_pool, k=length))
     return passphrase

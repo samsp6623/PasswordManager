@@ -1,5 +1,4 @@
 import cmd
-import pdb
 
 from core import App, AutomationInterface, Config, Interface, TerminalInterface
 from utils import generate_random_password
@@ -22,6 +21,7 @@ class TurtleShell(cmd.Cmd):
 
     def do_make_config(self, arg):
         "This one helps to initialize new Config file."
+        Interface.update(TerminalInterface)
         Config().initialize()
 
     def do_change_setup(self, arg):
@@ -78,7 +78,7 @@ class TurtleShell(cmd.Cmd):
 
     def do_introspect(self, arg):
         "For developer only, Allows to introspect in the objects in the runtime"
-        pdb.set_trace()
+        breakpoint()
 
     def do_save(self, arg):
         self.context.closing_time()

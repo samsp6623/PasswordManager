@@ -4,7 +4,6 @@ import hashlib
 import inspect
 import logging
 import os
-import pdb
 import pickle
 import re
 from abc import ABC, abstractmethod
@@ -204,7 +203,7 @@ class FernetwPassphrase(AbstractEncryptionClass):
             )
         )
         iterations = iterations if iterations > 480000 else 480000
-        salt = os.urandom(16)
+        salt = hashlib.sha256(os.environ.get("SALT").encode("utf-8")).digest()
         conf_data = {
             "algorithm": algorithm(),
             "passphrase": passphrase,
@@ -309,8 +308,7 @@ class Storage(ABC):
 class File(Storage):
     """
     This class is used to read the config file that chooses to store the data on
-    local machine `File` system, as well for any cloud storage as for program to start
-    it needs some intial data.
+    local machine `File` system.
     """
 
     def get(self, file):
