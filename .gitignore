@@ -8,3 +8,5 @@ temp.txt
 .DS_Store
 *.swp
 */*.dtmp
+uv.lock
+temp

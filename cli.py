@@ -22,6 +22,7 @@ class TurtleShell(cmd.Cmd):
 
     def do_make_config(self, arg):
         "This one helps to initialize new Config file."
+        Interface.update(TerminalInterface)
         Config().initialize()
 
     def do_change_setup(self, arg):
