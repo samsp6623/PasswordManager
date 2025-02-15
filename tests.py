@@ -1,5 +1,3 @@
-import pdb
-
 from core import HOME_DIR, App, Config, Interface, ScriptInterface
 
 data_dict = dict()

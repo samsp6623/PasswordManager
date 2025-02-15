@@ -1,12 +1,11 @@
 import json
-import pdb
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from core import (
     App,
     Config,
     FernetwPassphrase,
-    InputHelper,
+    # InputHelper,
     Interface,
     ScriptInterface,
 )
