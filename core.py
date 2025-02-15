@@ -12,6 +12,7 @@ from pathlib import Path
 from pprint import pprint
 from typing import Any, Self, TextIO
 
+import pyotp
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -45,9 +46,11 @@ def select_option(options: list[Any], message: str, field_name: str):
 
 
 class Entries:
-    def __init__(self, username, password) -> None:
+    def __init__(self, username: str, password: str, notes: str, otp: str) -> None:
         self.username = username
         self.password = password
+        self.notes = notes
+        self.otp = otp
 
     def __eq__(self, other: Self) -> bool:
         if (self.username == other.username) and (self.password == other.password):
@@ -55,7 +58,7 @@ class Entries:
         return False
 
     def __hash__(self):
-        return hash((self.username, self.password))
+        return hash(self.username)
 
     def __str__(self) -> str:
         return "username: " + self.username + " password: " + self.password
@@ -117,6 +120,7 @@ class ScriptInterface(AbstractInterface):
             print(f"Needed field {field_name} is not available in {q_name}.")
         return field
 
+    @classmethod
     def load(cls, user_data: dict) -> None:
         cls.data.update(user_data)
 
@@ -175,19 +179,27 @@ class AbstractEncryptionClass(ABC):
         setup to perform necessary further action.
         """
 
-    def encrypt(self, username: str, password: str) -> Entries:
+    def encrypt(
+        self, username: str, password: str, notes: str = "", otp: str = ""
+    ) -> Entries:
         username = self.f.encrypt(username.encode()).decode()
         password = self.f.encrypt(password.encode()).decode()
+        notes = self.f.encrypt(notes.encode()).decode()
+        otp = self.f.encrypt(otp.encode()).decode()
         logger.info("Ecrypted username and password")
-        return Entries(username, password)
+        return Entries(username, password, notes, otp)
 
     def decrypt(self, inst: Entries) -> dict:
         username = self.f.decrypt(inst.username.encode())
         password = self.f.decrypt(inst.password.encode())
+        notes = self.f.decrypt(inst.notes.encode())
+        otp = self.f.decrypt(inst.otp.encode())
         logger.info("Decrypted username and password")
         return {
             "username": username.decode(),
             "password": password.decode(),
+            "otp": otp.decode(),
+            "notes": notes.decode(),
         }
 
     def __str__(self) -> str:
@@ -438,42 +450,54 @@ class Config:
         password = Interface().input(
             message="Enter the Password", kind="password", field_name="password"
         )
+        notes = Interface().input(message="Enter the notes", field_name="notes")
+        otp = Interface().input(message="Enter the TOTP secret", field_name="otp")
         if not self.data.get(domain, None):
             self.data[domain] = set()
-        dmain = self.data[domain]
-        dmain.add(self.encryption_type.encrypt(username, password))
+        self.data[domain].add(
+            self.encryption_type.encrypt(username, password, notes, otp)
+        )
         logger.info("domain, username and password added.")
-        return {"username": username, "password": password, "domain": domain}
+        return {"domain": domain, "username": username, "password": password}
 
     def update_credentials(self) -> None:
         """Method to update existing credential. This method uses `get_credentials` to
         choose from available records and offers to provide new credentials.
         """
         options = self.get_credentials()
-        data = list()
-        data.append(options)
         old_record = select_option(
-            data,
+            options,
             message="Choose record to update:",
             field_name="old_record",
         )
-        new_username = Interface().input(
-            message="Enter new Username:", field_name="new_username"
+        new_username = (
+            Interface().input(message="Enter new Username:", field_name="new_username")
+            or old_record[1]
         )
-        new_password = Interface().input(
-            message="Enter new Password:", field_name="new_password", kind="password"
+        new_password = (
+            Interface().input(
+                message="Enter new Password:",
+                field_name="new_password",
+                kind="password",
+            )
+            or old_record[2]
         )
-        domain = [_ for _ in old_record.keys()][0]
-        old_username = old_record[domain][0]["username"]
-        dmain = self.data[domain]
-        for _record in dmain:
-            if (
-                old_username
-                == self.encryption_type.f.decrypt(_record.username.encode()).decode()
-            ):
-                self.data[domain].remove(_record)
+        notes = (
+            Interface().input(message="Enter the notes", field_name="notes")
+            or old_record[4]
+        )
+        domain = old_record[0]
+        old_username = old_record[1]
+        for ent in self.data[domain]:
+            _ = self.encryption_type.decrypt(ent)
+            if old_username == _["username"]:
+                otp = (
+                    Interface().input(message="Enter the TOPT", field_name="otp")
+                    or _["otp"]
+                )
+                self.data[domain].remove(ent)
                 self.data[domain].add(
-                    self.encryption_type.encrypt(new_username, new_password)
+                    self.encryption_type.encrypt(new_username, new_password, notes, otp)
                 )
 
     def get_credentials(self) -> dict[str, list[Entries | None]]:
@@ -485,14 +509,20 @@ class Config:
                 continue
             if key.find(domain) >= 0:
                 keys.add(key)
-        output: dict[str, list[Entries]] = {}
+        output: list[tuple[str, str, str, str, str]] = list()
         for d in keys:
             for instance in self.data[d]:
-                if not output.get(d, None):
-                    output[d] = []
-                output[d].append(self.encryption_type.decrypt(instance))
+                data = self.encryption_type.decrypt(instance)
+                output.append(
+                    (
+                        d,
+                        data["username"],
+                        data["password"],
+                        pyotp.TOTP(data["otp"]).now(),
+                        data["notes"],
+                    )
+                )
             logger.info("Retrieving domain, username and password")
-        print(output)
         return output
 
     def delete_credentials(self) -> dict[str, str] | None:

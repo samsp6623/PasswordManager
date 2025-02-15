@@ -30,6 +30,8 @@ data_dict.update(
             "domain": "example.com",
             "password": "user",
             "username": "user",
+            "notes": "HELLO WORLD",
+            "otp": "SOMESECRET",
         }
     }
 )
@@ -40,6 +42,8 @@ data_dict.update(
             "old_record": 0,
             "new_username": "USERS",
             "new_password": "PASSWORD",
+            "notes": "hello world",
+            "otp": "somesecret",
         }
     }
 )
@@ -67,6 +71,8 @@ if __name__ == "__main__":
                 "domain": "exa.com",
                 "password": "example",
                 "username": "example",
+                "notes": "viola",
+                "otp": "someotpsecret",
             }
         }
     )
