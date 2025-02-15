@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "cryptography==44.0.0",
+    "pyotp>=2.9.0",
+    "ruff>=0.9.6",
 ]
 
 [tool.ruff]

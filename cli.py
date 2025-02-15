@@ -58,6 +58,13 @@ class TurtleShell(cmd.Cmd):
         except KeyError:
             print("Please provide the domain name.")
 
+    def do_update_creds(self, arg):
+        "Allows to update from a list of records."
+        try:
+            self.context.update_credentials()
+        except Exception as e:
+            print(f"Error: {e}")
+
     def do_delete_creds(self, arg):
         "Removes all the username/password entry for provided domain."
         self.context.delete_credentials()
