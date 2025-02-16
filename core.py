@@ -70,6 +70,10 @@ class Entries:
             + ", Password: "
             + self.password
             + " >"
+            + " notes "
+            + self.notes
+            + " T-OTP "
+            + self.otp
         )
 
 
@@ -184,16 +188,18 @@ class AbstractEncryptionClass(ABC):
     ) -> Entries:
         username = self.f.encrypt(username.encode()).decode()
         password = self.f.encrypt(password.encode()).decode()
-        notes = self.f.encrypt(notes.encode()).decode()
-        otp = self.f.encrypt(otp.encode()).decode()
+        notes = self.f.encrypt((notes if notes else "").encode()).decode()
+        otp = self.f.encrypt((otp if otp else "").encode()).decode()
         logger.info("Ecrypted username and password")
         return Entries(username, password, notes, otp)
 
     def decrypt(self, inst: Entries) -> dict:
         username = self.f.decrypt(inst.username.encode())
         password = self.f.decrypt(inst.password.encode())
-        notes = self.f.decrypt(inst.notes.encode())
-        otp = self.f.decrypt(inst.otp.encode())
+        notes = (
+            self.f.decrypt(inst.notes.encode()) if getattr(inst, "notes", None) else b""
+        )
+        otp = self.f.decrypt(inst.otp.encode()) if getattr(inst, "otp", None) else b""
         logger.info("Decrypted username and password")
         return {
             "username": username.decode(),
@@ -496,9 +502,12 @@ class Config:
                     or _["otp"]
                 )
                 self.data[domain].remove(ent)
-                self.data[domain].add(
-                    self.encryption_type.encrypt(new_username, new_password, notes, otp)
+                new_record = self.encryption_type.encrypt(
+                    new_username, new_password, notes, otp
                 )
+                self.data[domain].add(new_record)
+                pprint(new_record)
+                break
 
     def get_credentials(self) -> dict[str, list[Entries | None]]:
         "To extract the credential information."
@@ -518,8 +527,8 @@ class Config:
                         d,
                         data["username"],
                         data["password"],
-                        pyotp.TOTP(data["otp"]).now(),
-                        data["notes"],
+                        pyotp.TOTP(data["otp"]).now() if data["otp"] else None,
+                        data["notes"] if data["notes"] else None,
                     )
                 )
             logger.info("Retrieving domain, username and password")

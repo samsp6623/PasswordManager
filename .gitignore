@@ -7,6 +7,6 @@ venv
 temp.txt
 .DS_Store
 *.swp
-*/*.dtmp
+*.dtmp
 uv.lock
 temp
